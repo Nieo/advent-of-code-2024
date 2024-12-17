@@ -78,6 +78,48 @@ defmodule AdventOfCode.Day06 do
     |> Enum.chunk_every(10)
   end
 
-  def part2(_args) do
+  def part2(args) do
+    {{dir, pos}, map} = parse(args, 0, 0, {nil, %{}})
+
+    map
+    |> Enum.filter(fn {k, v} -> v == "." && k != pos end)
+    |> Enum.map(fn {k, _} -> k end)
+    |> Task.async_stream(fn k ->
+      map
+      |> Map.update!(k, fn _ -> "#" end)
+      |> loop?(pos, dir)
+    end)
+    |> Enum.map(fn {:ok, result} -> result end)
+    |> Enum.sum()
   end
+
+  def filter_loops({:ok, _, _}), do: true
+  def filter_loops({:nop}), do: false
+
+  def move2(map, {r, c}, {x, y}, result \\ []) do
+    case Map.get(map, {r + x, c + y}) do
+      "." -> move2(map, {r + x, c + y}, {x, y}, [is_loop?(map, {r, c}, {x, y}) | result])
+      "#" -> move2(map, {r, c}, rotate({x, y}), result)
+      nil -> result
+    end
+  end
+
+  def is_loop?(map, {r, c}, {x, y}) do
+    loop?(Map.replace(map, {r + x, c + y}, "#"), {r, c}, rotate({x, y}))
+  end
+
+  def loop?(map, {r, c}, {x, y}) do
+    updated = Map.update(map, {r, c}, {x, y}, &trace(&1, {x, y}))
+
+    case Map.get(map, {r + x, c + y}) do
+      {^x, ^y} -> 1
+      "#" -> loop?(updated, {r, c}, rotate({x, y}))
+      "." -> loop?(updated, {r + x, c + y}, {x, y})
+      {_, _} -> loop?(updated, {r + x, c + y}, {x, y})
+      nil -> 0
+    end
+  end
+
+  def trace(a, _) when is_tuple(a), do: a
+  def trace(".", t), do: t
 end
