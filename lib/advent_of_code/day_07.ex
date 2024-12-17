@@ -20,6 +20,7 @@ defmodule AdventOfCode.Day07 do
     [result, params] =
       text
       |> split(":", trim: true)
+
     {to_integer(result), params |> split(" ", trim: true) |> map(&to_integer/1)}
   end
 
@@ -30,10 +31,30 @@ defmodule AdventOfCode.Day07 do
   def calibrate(target, [x | xs], 0) do
     calibrate(target, xs, x)
   end
-  def calibrate(target, [x | xs], value ) do
+
+  def calibrate(target, [x | xs], value) do
     calibrate(target, xs, value + x) or calibrate(target, xs, value * x)
   end
 
-  def part2(_args) do
+  def part2(args) do
+    args
+    |> parse
+    |> filter(fn {target, params} -> calibrate2(target, params, 0) end)
+    |> map(fn {i, _} -> i end)
+    |> sum()
+  end
+
+  def calibrate2(target, [], value) do
+    target == value
+  end
+
+  def calibrate2(target, [x | xs], 0) do
+    calibrate2(target, xs, x)
+  end
+
+  def calibrate2(target, [x | xs], value) do
+    calibrate2(target, xs, value + x) or
+      calibrate2(target, xs, value * x) or
+      calibrate2(target, xs, to_integer("#{value}#{x}"))
   end
 end
